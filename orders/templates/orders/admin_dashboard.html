@@ -13,8 +13,17 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #e4eee4; color: #1e271e; }
         .btn-accept { background: green; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 13px; }
-        .btn-toggle { background: #444; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-size: 13px; }
+        .btn-toggle { background: #444; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-size: 13px; margin-right: 5px; }
+        
+        /* Custom button stylings for edit and save workflow */
+        .btn-edit { background: #007bff; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-size: 13px; border: none; cursor: pointer; margin-right: 5px; }
+        .btn-save { background: #28a745; color: white; padding: 4px 8px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #dc3545; color: white; padding: 4px 8px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; margin-left: 5px; }
+        
         input[type="text"], input[type="number"], select { padding: 10px; margin-right: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        /* Compact input layout for the inline editing state */
+        .inline-edit-input { padding: 5px !important; width: 90% !important; margin: 0 !important; font-size: 13px; }
+        
         .btn-add { background: #cd7f32; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
         .BADGE-PENDING { background: #fff3cd; color: #856404; }
@@ -96,7 +105,8 @@
                     </thead>
                     <tbody>
                         {% for item in menu_items %}
-                        <tr>
+                        <!-- Read-Only View Row -->
+                        <tr id="row-view-{{ item.id }}">
                             <td><strong>{{ item.name }}</strong></td>
                             <td>KSh {{ item.price }}</td>
                             <td>{{ item.get_category_display }}</td>
@@ -107,7 +117,43 @@
                                     <span style="color: red;">Out of Stock</span>
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'toggle_menu_item' item.id %}" class="btn-toggle">Toggle Stock</a></td>
+                            <td style="white-space: nowrap;">
+                                <button type="button" class="btn-edit" onclick="toggleEditState('{{ item.id }}')">Edit</button>
+                                <a href="{% url 'toggle_menu_item' item.id %}" class="btn-toggle">Toggle Stock</a>
+                            </td>
+                        </tr>
+
+                        <!-- Hidden Editable Form Row -->
+                        <tr id="row-edit-{{ item.id }}" style="display: none; background: #fdfaf6;">
+                            <form method="post" action="{% url 'admin_dashboard' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="item_id" value="{{ item.id }}">
+                                <td>
+                                    <input type="text" name="edit_name" value="{{ item.name }}" class="inline-edit-input" required>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="edit_price" value="{{ item.price }}" class="inline-edit-input" required>
+                                </td>
+                                <td>
+                                    <select name="edit_category" class="inline-edit-input" required>
+                                        <option value="BREAKFAST" {% if item.category == 'BREAKFAST' %}selected{% endif %}>Breakfast Profile</option>
+                                        <option value="LUNCH" {% if item.category == 'LUNCH' %}selected{% endif %}>Lunch Profile</option>
+                                        <option value="DINNER" {% if item.category == 'DINNER' %}selected{% endif %}>Supper/Dinner Profile</option>
+                                        <option value="DRINK" {% if item.category == 'DRINK' %}selected{% endif %}>Soft Drinks Profile</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    {% if item.is_available %}
+                                        <span style="color: green; font-weight: bold; font-size: 12px;">In Stock</span>
+                                    {% else %}
+                                        <span style="color: red; font-size: 12px;">Out of Stock</span>
+                                    {% endif %}
+                                </td>
+                                <td style="white-space: nowrap;">
+                                    <button type="submit" name="update_item" class="btn-save">Save</button>
+                                    <button type="button" class="btn-cancel" onclick="toggleEditState('{{ item.id }}')">Cancel</button>
+                                </td>
+                            </form>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -140,5 +186,22 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript handler to flip rows seamlessly -->
+<script>
+function toggleEditState(itemId) {
+    var viewRow = document.getElementById('row-view-' + itemId);
+    var editRow = document.getElementById('row-edit-' + itemId);
+    
+    if (viewRow.style.display === 'none') {
+        viewRow.style.display = 'table-row';
+        editRow.style.display = 'none';
+    } else {
+        viewRow.style.display = 'none';
+        editRow.style.display = 'table-row';
+    }
+}
+</script>
+
 </body>
 </html>

@@ -79,14 +79,20 @@ WSGI_APPLICATION = 'mess.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 
-import dj_database_url
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default='postgresql://mess_db_pgnp_user:p1x4BrRTNZvYGHKKm0p7mvcFrHWQ4iCB@dpg-d8oem3j6sc1c73bku710-a/mess_db_pgnp',
-        conn_max_age=600
-    )
-}
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL)
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
