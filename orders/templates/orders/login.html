@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KDF Mess Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #2b3a2a; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #1e271e; padding: 30px; border-radius: 8px; border: 2px solid #cd7f32; width: 320px; box-shadow: 0px 4px 15px rgba(0,0,0,0.5); }
+        h2 { text-align: center; color: #cd7f32; margin-top: 0; }
+        input[type="text"], input[type="password"] { width: 93%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #444; background: #2d382d; color: #fff; }
+        button { width: 100%; padding: 12px; background: #cd7f32; border: none; color: white; font-weight: bold; font-size: 16px; cursor: pointer; border-radius: 4px; }
+        a { color: #cd7f32; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>KDF MESS SYSTEM</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Log Operational Access</button>
+        </form>
+        <p style="margin-top: 15px; font-size: 14px; text-align: center;">New Officer? <a href="{% url 'signup' %}">Register Profile Here</a></p>
+    </div>
+</body>
+</html>

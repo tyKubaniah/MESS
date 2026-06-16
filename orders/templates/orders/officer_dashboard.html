@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Officer Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f4; color: #333; }
+        header { background: #2b3a2a; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #cd7f32; }
+        .container { padding: 30px; max-width: 1200px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .card { background: white; padding: 20px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h3 { border-bottom: 2px solid #2b3a2a; padding-bottom: 8px; color: #2b3a2a; }
+        .menu-cat { font-weight: bold; color: #cd7f32; margin-top: 15px; background: #eee; padding: 5px 10px; border-left: 4px solid #cd7f32; }
+        .menu-item { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #eee; }
+        .item-label { display: flex; align-items: center; gap: 10px; }
+        .price-tag { color: #2b3a2a; font-weight: bold; background: #e4eee4; padding: 2px 8px; border-radius: 4px; font-size: 14px; }
+        input[type="text"] { padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { padding: 8px 15px; background: #2b3a2a; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-order { background: #cd7f32; padding: 12px 25px; font-size: 16px; font-weight: bold; width: 100%; margin-top: 15px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background: #f2f2f2; }
+        .status-PENDING { color: orange; font-weight: bold; }
+        .status-ACCEPTED { color: green; font-weight: bold; }
+        .status-CANCELLED { color: red; }
+        footer { margin-top: 40px; background: #1e271e; color: white; padding: 20px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>KDF OFFICERS MESS GATEWAY</h2>
+    <div>
+        <span>{{ profile.get_rank_display }} {{ request.user.first_name }} {{ request.user.last_name }} [{{ profile.service_number }}]</span> | 
+        <a href="{% url 'logout' %}" style="color: #cd7f32; font-weight: bold; text-decoration: none; margin-left: 10px;">Logout</a>
+    </div>
+</header>
+
+<div class="container">
+    <div class="grid">
+        <div>
+            <div class="card">
+                <h3>Current Stationed Office Details</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <p>Current Office Location: <strong>{{ profile.office_location }}</strong></p>
+                    <label>Change Office Location: </label>
+                    {{ office_form.office_location }}
+                    <button type="submit" name="update_office" class="btn">Update Office Map</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Place Mess Food Order</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="menu-cat">Breakfast (10 Types)</div>
+                    {% for item in menu_breakfast %}
+                        <div class="menu-item">
+                            <span class="item-label"><input type="checkbox" name="items" value="{{ item.id }}"> {{ item.name }}</span>
+                            <span class="price-tag">KSh {{ item.price }}</span>
+                        </div>
+                    {% endfor %}
+
+                    <div class="menu-cat">Lunch (10 Types)</div>
+                    {% for item in menu_lunch %}
+                        <div class="menu-item">
+                            <span class="item-label"><input type="checkbox" name="items" value="{{ item.id }}"> {{ item.name }}</span>
+                            <span class="price-tag">KSh {{ item.price }}</span>
+                        </div>
+                    {% endfor %}
+
+                    <div class="menu-cat">Supper/Dinner (10 Types)</div>
+                    {% for item in menu_dinner %}
+                        <div class="menu-item">
+                            <span class="item-label"><input type="checkbox" name="items" value="{{ item.id }}"> {{ item.name }}</span>
+                            <span class="price-tag">KSh {{ item.price }}</span>
+                        </div>
+                    {% endfor %}
+
+                    <div class="menu-cat">Soft Drinks (10 Types)</div>
+                    {% for item in menu_drinks %}
+                        <div class="menu-item">
+                            <span class="item-label"><input type="checkbox" name="items" value="{{ item.id }}"> {{ item.name }}</span>
+                            <span class="price-tag">KSh {{ item.price }}</span>
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" name="place_order" class="btn btn-order">Transmit Order To Mess Kitchen</button>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <div class="card">
+                <h3>My Order Logs</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Items Selected</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in my_orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>
+                                {% for item in order.items.all %}
+                                    • {{ item.name }} (KSh {{ item.price }})<br>
+                                {% endfor %}
+                            </td>
+                            <td><span class="status-{{ order.status }}">{{ order.get_status_display }}</span></td>
+                            <td>
+                                {% if order.status == 'PENDING' %}
+                                    <a href="{% url 'cancel_order' order.id %}" style="color:red; text-decoration:none; font-weight:bold;">Cancel</a>
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" style="text-align: center; color: #777;">No orders placed yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div>
+            <strong>MESS HELPLINE:</strong> Contact the Mess Admin immediately at: 
+            <span style="color: #cd7f32; font-size: 18px; font-weight: bold; margin-left: 10px;">{{ mess_contact }}</span>
+        </div>
+    </footer>
+</div>
+</body>
+</html>

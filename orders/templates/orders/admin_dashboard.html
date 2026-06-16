@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mess Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f0f2f0; }
+        header { background: #1e271e; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #cd7f32; }
+        .container { padding: 30px; max-width: 1300px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 3fr 2fr; gap: 30px; }
+        .card { background: white; padding: 25px; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        h3 { color: #1e271e; border-bottom: 2px solid #cd7f32; padding-bottom: 8px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #e4eee4; color: #1e271e; }
+        .btn-accept { background: green; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .btn-toggle { background: #444; color: white; padding: 4px 8px; text-decoration: none; border-radius: 4px; font-size: 13px; }
+        input[type="text"], input[type="number"], select { padding: 10px; margin-right: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        .btn-add { background: #cd7f32; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .BADGE-PENDING { background: #fff3cd; color: #856404; }
+        .BADGE-ACCEPTED { background: #d4edda; color: #155724; }
+        .BADGE-CANCELLED { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2>MESS SUPERUSER COMMAND CONTROL CENTER</h2>
+    <div>
+        <a href="{% url 'logout' %}" style="color: #cd7f32; font-weight: bold; text-decoration: none;">Logout</a>
+    </div>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h3>Pending Orders Requiring Dispatch Approval</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Officer</th>
+                    <th>Rank</th>
+                    <th>Office Location</th>
+                    <th>Requested Items (With Prices)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in pending_orders %}
+                <tr>
+                    <td><strong>{{ order.officer.user.first_name }} {{ order.officer.user.last_name }}</strong><br>SN: {{ order.officer.service_number }}</td>
+                    <td>{{ order.officer.get_rank_display }}</td>
+                    <td>{{ order.officer.office_location }}</td>
+                    <td>
+                        {% for item in order.items.all %}
+                            • {{ item.name }} (KSh {{ item.price }})<br>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <a href="{% url 'accept_order' order.id %}" class="btn-accept">Approve & Dispatch</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" style="text-align: center; color: #777;">No pending mess orders on grid.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Add New Option to Menu</h3>
+            <form method="post" action="{% url 'admin_dashboard' %}" style="margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px;">
+                {% csrf_token %}
+                <input type="text" name="name" placeholder="Item Name" required>
+                <input type="number" step="0.01" name="price" placeholder="Price (KSh)" required>
+                <select name="category" required>
+                    <option value="BREAKFAST">Breakfast Profile</option>
+                    <option value="LUNCH">Lunch Profile</option>
+                    <option value="DINNER">Supper/Dinner Profile</option>
+                    <option value="DRINK">Soft Drinks Profile</option>
+                </select>
+                <button type="submit" name="add_item" class="btn-add">Add Item to Inventory</button>
+            </form>
+
+            <h3>Menu Profiles Stock Inventory</h3>
+            <div style="max-height: 450px; overflow-y: scroll;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Price</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in menu_items %}
+                        <tr>
+                            <td><strong>{{ item.name }}</strong></td>
+                            <td>KSh {{ item.price }}</td>
+                            <td>{{ item.get_category_display }}</td>
+                            <td>
+                                {% if item.is_available %}
+                                    <span style="color: green; font-weight: bold;">In Stock</span>
+                                {% else %}
+                                    <span style="color: red;">Out of Stock</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="{% url 'toggle_menu_item' item.id %}" class="btn-toggle">Toggle Stock</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Historical Orders Audit Log</h3>
+            <div style="max-height: 580px; overflow-y: scroll;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Officer</th>
+                            <th>Status State</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in all_orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.officer.user.last_name }}</td>
+                            <td><span class="status-badge BADGE-{{ order.status }}">{{ order.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
